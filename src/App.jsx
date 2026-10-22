@@ -1,11 +1,9 @@
 /* eslint-disable react/react-in-jsx-scope */
-import { nanoid } from "nanoid";
 import { useState } from "react"
 
 export default function App() {
   const [table, setTable] = useState({side: [], bottom: []});
   const [inputs, setInputs] = useState([]);
-  const [solvedPuzzle, setSolvedPuzzle] = useState([]);
   const [gridSize, setGridSize] = useState(0);
 
   function generatePuzzle() {
@@ -63,7 +61,6 @@ export default function App() {
       })
 
       setTable({side: newSideNums, bottom: newBottomNums});
-      setSolvedPuzzle(completedGrid);
     }
     catch (e) 
     {
@@ -72,25 +69,25 @@ export default function App() {
   }
 
   function inputClicked(e, i, j) {
-    const newInputs = [...inputs];
+    const newInputs = inputs.map((row) => [...row]);
 
     newInputs[i][j] = e.target.checked;
 
     setInputs(newInputs);
 
-    checkWin();
+    checkWin(newInputs);
   }
-  
-  function checkWin() {
-    let win = true;
-    inputs.forEach((inputRow, i) => {
-      inputRow.forEach((input, j) => {
-      if (Boolean(solvedPuzzle[i][j]) !== input) {
-        win = false;
-      }
-    })})
-    if (win === true) {
-      alert("You WOn!!!!")
+
+  // A puzzle can have more than one valid answer, so compare against the clues
+  // instead of the generated grid.
+  function checkWin(grid) {
+    const win = grid.every((row, i) =>
+      row.reduce((sum, cell, j) => sum + (cell ? j + 1 : 0), 0) === table.side[i]
+    ) && grid[0].every((_, j) =>
+      grid.reduce((sum, row, i) => sum + (row[j] ? i + 1 : 0), 0) === table.bottom[j]
+    );
+    if (win) {
+      setTimeout(() => alert("You won!"), 0);
     }
   }
 
@@ -119,20 +116,21 @@ export default function App() {
   for (let i = 0; i < gridSize; i++) {
     inputRows[i] = []
     for (let j = 0; j < gridSize; j++) {
-      inputRows[i][j] = <td key={nanoid()}><input type="checkbox" checked={inputs[i]? inputs[i][j] : false} onChange={(e) => inputClicked(e, i, j)}></input></td>
+      inputRows[i][j] = <td key={j}><input type="checkbox" checked={inputs[i]? inputs[i][j] : false} onChange={(e) => inputClicked(e, i, j)}></input></td>
     }
   }
 
   const topRow = [];
 
   for (let i = 0; i < gridSize; i++) {
-    topRow[i] = <td>{i + 1}</td>
+    topRow[i] = <td key={i}>{i + 1}</td>
   }
 
   return (
     <>
       <header>
-        <h1>Kakurasu (like the sins of the father one from osrs) (Dylan's Version)</h1>
+        <h1>Kakurasu</h1>
+        <p>Check cells so each row and column adds up to its clue. A cell is worth its column number in its row, and its row number in its column.</p>
         <button onClick={generatePuzzle}>Generate New Puzzle</button>
       </header>
       <div>
@@ -144,10 +142,10 @@ export default function App() {
               <td></td>
             </tr>
             {inputRows.map((row, index) => {
-              return <tr key={nanoid()}><td>{index + 1}</td>{row}<td>{table.side[index]}</td><td className="currentNum">{currentSideNums[index]}</td></tr>;
+              return <tr key={index}><td>{index + 1}</td>{row}<td>{table.side[index]}</td><td className="currentNum">{currentSideNums[index]}</td></tr>;
               })}
-            <tr><td></td>{table.bottom.map((value) => <td key={nanoid()}>{value}</td>)}<td></td></tr>
-            <tr><td className="currentNum"></td>{currentBottomNums.map((value) => <td key={nanoid()} className="currentNum">{value}</td>)}</tr>
+            <tr><td></td>{table.bottom.map((value, j) => <td key={j}>{value}</td>)}<td></td></tr>
+            <tr><td className="currentNum"></td>{currentBottomNums.map((value, j) => <td key={j} className="currentNum">{value}</td>)}</tr>
           </tbody>
         </table>
       </div>
